@@ -1,0 +1,90 @@
+
+-- PERSIAPAN DATABASE & TABEL
+CREATE DATABASE IF NOT EXISTS akademik;
+USE akademik;
+
+CREATE TABLE mahasiswa (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nama VARCHAR(100),
+    prodi VARCHAR(100)
+);
+
+CREATE TABLE dosen (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nama VARCHAR(100),
+    jurusan VARCHAR(100)
+);
+
+CREATE TABLE nilai (
+    id_mahasiswa INT,
+    id_dosen INT,
+    mata_kuliah VARCHAR(100),
+    nilai INT
+);
+
+-- MEMBUAT ROLE
+CREATE ROLE 'admin_akademik';
+CREATE ROLE 'dosen';
+CREATE ROLE 'mahasiswa';
+
+-- MEMBUAT USER
+CREATE USER 'siti_admin'@'localhost' IDENTIFIED BY 'admin123';
+CREATE USER 'bapak_andre'@'localhost' IDENTIFIED BY 'dosen123';
+CREATE USER 'dina'@'localhost' IDENTIFIED BY 'mahasiswa123';
+CREATE USER 'reza'@'localhost' IDENTIFIED BY 'mahasiswa123';
+
+-- MEMBERIKAN ROLE KE USER
+GRANT 'admin_akademik' TO 'siti_admin'@'localhost';
+GRANT 'dosen' TO 'bapak_andre'@'localhost';
+GRANT 'mahasiswa' TO 'dina'@'localhost';
+GRANT 'mahasiswa' TO 'reza'@'localhost';
+
+-- MEMBERIKAN HAK AKSES KE ROLE
+GRANT ALL ON akademik.* TO 'admin_akademik';
+GRANT SELECT, INSERT, UPDATE ON akademik.nilai TO 'dosen';
+GRANT SELECT ON akademik.nilai TO 'mahasiswa';
+
+-- SET DEFAULT ROLE (Aktif saat login)
+SET DEFAULT ROLE 'admin_akademik' TO 'siti_admin'@'localhost';
+SET DEFAULT ROLE 'dosen' TO 'bapak_andre'@'localhost';
+SET DEFAULT ROLE 'mahasiswa' TO 'dina'@'localhost';
+SET DEFAULT ROLE 'mahasiswa' TO 'reza'@'localhost';
+
+-- REVOKE HAK AKSES (Jika Terlanjur Berlebihan)
+REVOKE DELETE ON akademik.nilai FROM 'dosen';
+
+-- DROP ROLE DAN BERIKAN AKSES LANGSUNG KE USER
+GRANT SELECT ON akademik.nilai TO 'dina'@'localhost';
+GRANT SELECT ON akademik.nilai TO 'reza'@'localhost';
+DROP ROLE 'mahasiswa';
+
+-- OPSIONAL: CEK GRANTS DAN ROLES
+SHOW GRANTS FOR 'bapak_andre'@'localhost';
+SELECT * FROM mysql.roles_mapping;
+SHOW GRANTS FOR 'dosen';
+
+1. Melihat Semua User di MariaDB
+
+SELECT User, Host FROM mysql.user;
+
+2. Melihat Semua Role yang Pernah Dibuat
+
+SELECT DISTINCT Role FROM mysql.roles_mapping;
+
+3. Melihat Siapa Saja yang Punya Role Tertentu
+SELECT User, Host FROM mysql.roles_mapping WHERE Role = 'guru';
+
+ 4. Melihat Semua Relasi antara User dan Role
+sql
+SELECT * FROM mysql.roles_mapping;
+ 
+5.Lihat user aktif saat ini
+SELECT CURRENT_USER();
+
+6.Lihat role aktif saat ini
+SELECT CURRENT_ROLE();
+
+ 7.Melihat Hak Akses dari User atau Role
+SHOW GRANTS FOR 'pakbudi'@'localhost';
+
+ SELECT * FROM mysql.roles_mapping WHERE User = 'bapak_andre';

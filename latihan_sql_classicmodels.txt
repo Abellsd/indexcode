@@ -1,0 +1,128 @@
+
+Latihan Soal SQL + Jawaban (Database: classicmodels)
+=====================================================
+
+1. Tampilkan nama pelanggan dan nama pegawai yang menjadi sales representative-nya.
+SQL:
+SELECT 
+    c.customerName,
+    e.firstName,
+    e.lastName
+FROM customers c
+JOIN employees e ON c.salesRepEmployeeNumber = e.employeeNumber;
+
+2. Tampilkan nama produk, kategori produk (productLine), dan harga jual (MSRP).
+SQL:
+SELECT 
+    p.productName,
+    pl.productLine,
+    p.MSRP
+FROM products p
+JOIN productlines pl ON p.productLine = pl.productLine;
+
+3. Tampilkan daftar order (nomor order dan tanggalnya) beserta produk yang dipesan dan jumlahnya.
+SQL:
+SELECT 
+    o.orderNumber,
+    o.orderDate,
+    p.productName,
+    od.quantityOrdered
+FROM orders o
+JOIN orderdetails od ON o.orderNumber = od.orderNumber
+JOIN products p ON od.productCode = p.productCode;
+
+4. Tampilkan total nilai dari setiap order.
+SQL:
+SELECT 
+    o.orderNumber,
+    SUM(od.quantityOrdered * od.priceEach) AS totalOrderValue
+FROM orders o
+JOIN orderdetails od ON o.orderNumber = od.orderNumber
+GROUP BY o.orderNumber;
+
+5. Tampilkan nama pegawai dan total penjualan yang mereka tangani.
+SQL:
+SELECT 
+    e.firstName,
+    e.lastName,
+    SUM(od.quantityOrdered * od.priceEach) AS totalSales
+FROM employees e
+JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber
+JOIN orders o ON c.customerNumber = o.customerNumber
+JOIN orderdetails od ON o.orderNumber = od.orderNumber
+GROUP BY e.employeeNumber;
+
+6. Tampilkan pelanggan yang belum pernah melakukan pembayaran.
+SQL:
+SELECT 
+    c.customerNumber,
+    c.customerName
+FROM customers c
+LEFT JOIN payments p ON c.customerNumber = p.customerNumber
+WHERE p.customerNumber IS NULL;
+
+7. Berapa total pembayaran yang dilakukan oleh setiap pelanggan?
+SQL:
+SELECT 
+    c.customerName,
+    SUM(p.amount) AS totalPayment
+FROM customers c
+JOIN payments p ON c.customerNumber = p.customerNumber
+GROUP BY c.customerNumber;
+
+8. Tampilkan 5 pelanggan dengan total pembelian terbesar.
+SQL:
+SELECT 
+    c.customerName,
+    SUM(od.quantityOrdered * od.priceEach) AS totalPurchase
+FROM customers c
+JOIN orders o ON c.customerNumber = o.customerNumber
+JOIN orderdetails od ON o.orderNumber = od.orderNumber
+GROUP BY c.customerNumber
+ORDER BY totalPurchase DESC
+LIMIT 5;
+
+9. Tampilkan produk yang belum pernah dipesan.
+SQL:
+SELECT 
+    p.productCode,
+    p.productName
+FROM products p
+WHERE p.productCode NOT IN (
+    SELECT DISTINCT productCode FROM orderdetails
+);
+
+10. Tampilkan pegawai yang bekerja di kantor yang berlokasi di negara "USA".
+SQL:
+SELECT 
+    e.firstName,
+    e.lastName,
+    o.city,
+    o.country
+FROM employees e
+JOIN offices o ON e.officeCode = o.officeCode
+WHERE o.country = 'USA';
+
+11. Tampilkan nama pelanggan, total pembayaran mereka, dan jumlah pesanan yang mereka lakukan.
+SQL:
+SELECT 
+    c.customerName,
+    COUNT(DISTINCT o.orderNumber) AS totalOrders,
+    SUM(p.amount) AS totalPayments
+FROM customers c
+LEFT JOIN orders o ON c.customerNumber = o.customerNumber
+LEFT JOIN payments p ON c.customerNumber = p.customerNumber
+GROUP BY c.customerNumber;
+
+12. Tampilkan produk dengan harga jual (MSRP) tertinggi untuk setiap kategori (productLine).
+SQL:
+SELECT 
+    productLine,
+    productName,
+    MSRP
+FROM products p
+WHERE MSRP IN (
+    SELECT MAX(MSRP)
+    FROM products
+    GROUP BY productLine
+);
