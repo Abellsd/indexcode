@@ -1,0 +1,461 @@
+---
+title: "Untitled"
+author: "-"
+date: "2025-06-20"
+output: html_document
+---
+```{r}
+# Negatif log-likelihood fungsi eksponensial
+neg_log_likelihood <- function(lambda, x) {
+  n <- length(x)
+  if (lambda <= 0) return(Inf)  # lambda harus positif
+  -n * log(lambda) + lambda * sum(x)
+}
+
+# Fungsi utama untuk estimasi MLE
+mle_exp <- function(x, start = 1) {
+  optim(par = start,
+        fn = neg_log_likelihood,
+        x = x,
+        method = "Brent",     # cocok untuk 1 parameter
+        lower = 1e-8,
+        upper = 100)$par      # hanya ambil nilai estimasi λ
+}
+
+```
+
+```{r}
+x <- c(0.388495237, 0.495981747, 1.828324201, 0.009331076,
+       2.168366877, 0.293000151, 0.223063166, 3.778375571,
+       1.37471450, 0.415257032)
+lambda_hat <- mle_exp(x, start = 1)
+cat("Estimasi lambda (MLE):", lambda_hat, "\n")
+lambda_theory <- 1 / mean(x)
+cat("Estimasi lambda (teoritis):", lambda_theory, "\n")
+
+```
+
+
+Ho : p1=p2 (proporsi perokok dan bukan perokok yang berkerut sama)
+H1 : p1>p2 (proporsi perokok yg berkeruut lebih besar dari yang bukan perokok)
+Tolak H0, ada cukup bukti bahwa proporsi kerutan lebih tinggi pada perokok.
+```{r}
+# Data
+x1 <- 95     # jumlah perokok yang berkerut
+n1 <- 150    # total perokok
+x2 <- 103    # jumlah bukan perokok yang berkerut
+n2 <- 250    # total bukan perokok
+
+# Proporsi
+p1_hat <- x1 / n1
+p2_hat <- x2 / n2
+
+# Proporsi gabungan
+p_hat <- (x1 + x2) / (n1 + n2)
+
+# Statistik uji z
+z <- (p1_hat - p2_hat) / sqrt(p_hat * (1 - p_hat) * (1/n1 + 1/n2))
+
+# p-value (uji satu sisi kanan)
+p_val <- pnorm(z, lower.tail = FALSE)
+
+# Output
+cat("Z-score:", z, "\n")
+cat("P-value:", p_val, "\n")
+
+```
+
+
+#MLE
+```{r}
+#normal
+set.seed(123)
+x=rnorm(100)
+x=x/sd(x)*8
+x=x-mean(x)+10 
+c("mean"=mean(x),"sd",sd(x))
+
+norm_likeli=function(x,m,s){
+  y = 1/sqrt(2*pi*s^2)*exp((-1/(2*s^2))*(x-m)^2)
+}
+
+llik=function(x,par){
+  m=par[1]
+  s=par[2]
+  n=length(x)
+  ll=-(n/2)*log(2*pi*s^2) + (-1/(2*s^2)) * sum((x - m)^2)
+  return(-ll) 
+}
+
+res0 = optim(par=c(0.5, 0.5), llik, x=x)
+cbind('direct' = c('mean'=mean(x), 'sd'=sd(x)),
+      'optim' = res0$par)
+
+```
+
+```{r}
+#Bernouli
+set.seed(123)
+library(Rlab)
+x<-rbern(100,0.5)
+#bernouli function function
+bernouli_lik<-function(x,p){
+  prod(p^x*(1-p)^(1-x))
+}
+#negative log like li hood
+bernouli_nlik<-function(x,p){
+  -sum(log(bernouli_lik(x,p)))
+}
+#estimasi parameter
+rs_bernouli<-optimize(f=bernouli_nlik,interval=c(0,1),x=x)
+# print result
+print(paste0("MLE estimate for Bernoulli distribution: ", rs_bernouli$minimum))
+```
+
+```{r}
+#Distribusi binomial 
+set.seed(123)
+x<-rbinom(100,10,0.5)
+#likelihood function
+binomial_lik<-function(x,n,p){
+  prod(choose(n,x)*p^x*(1-p)^(n-x))
+}
+#negatife loglikehood
+binomial_nlik<-function(x,n,p){
+  -sum(log(binomial_lik(x,n,p)))
+}
+#estimasi parameeter
+res_binomial<-optim((par=0.3),binomial_nlik,x=x,n=10)
+#print result
+print(paste0("MLE estimate for binomial distribution :  ",res_binomial$par))
+```
+
+```{r}
+#eksponensial
+set.seed(123)
+x<-rexp(120,5)
+#likelihood function
+exponential_lik<-function(x,lambda){
+  prod(lambda*exp(-lambda*x))
+}
+# negative log-likelihood function
+exponential_nllik <- function(x, lambda) {
+  -sum(log(exponential_lik(x, lambda)))
+}
+# estimate parameter
+res_exponential <- optim(par = 0.5, exponential_nllik, x = x)
+
+# print result
+print(paste0("MLE estimate for Exponential distribution: ", res_exponential$par))
+```
+
+# bootstrap non parametrik
+```{r}
+set.seed(123)
+x=c(1,2,3,4)
+n=length(x)
+B=5
+x_star=NULL
+for (i in 1:B){
+  x_star=cbind(x_star,sample(x,n,replace=TRUE))
+}
+x_boot=matrix(0,1,B)
+for (i in 1:B){
+  x_boot[1,i]=mean(x_star[,i])
+}
+CI<-quantile(x_boot,c(0.25,0.95))
+print(CI)
+mean(x_boot)
+sd(x_boot)
+hist(x_boot)
+
+```
+#bootstrap parametrik
+```{r}
+set.seed(123)
+x<-runif(10,min=0,max=1)
+n<-10
+B=10
+x_bar_boot=vector()
+for (i in 1:B){
+  x_boot=sample(x,n,replace=TRUE)
+  x_bar_boot[i]=mean(x_boot)
+}
+hist(x_bar_boot)
+sd(x_bar_boot)
+
+```
+#jacknife
+```{r}
+set.seed(123)
+x = rnorm(100)
+n = length(x)
+partials = rep(0, n)
+
+# Jackknife: leave-one-out means
+for (i in 1:n) {
+  partials[i] = mean(x[-i])
+}
+
+x_full = mean(x)
+x_theta = mean(partials)
+
+# Bias estimate
+bias_jack = (n - 1) * (x_theta - x_full)
+
+# SE jackknife (versi leave-one-out)
+se_jack = sqrt(((n - 1) / n) * sum((partials - x_theta)^2))
+
+# Pseudo-values
+pseudos = n * x_full - (n - 1) * partials
+
+# Jackknife estimate (bias-corrected)
+jack.est = mean(pseudos)
+
+# Jackknife standard error (dari pseudo values)
+jack.se = sqrt(var(pseudos) / n)
+
+# Confidence Interval (95%)
+t_crit = qt(0.025, df = n - 1, lower.tail = FALSE)
+ME = t_crit * jack.se
+lower = jack.est - ME
+upper = jack.est + ME
+
+# Output
+cat("Jackknife Estimate:", jack.est, "\n")
+cat("Standard Error (from pseudos):", jack.se, "\n")
+cat("Standard Error (from partials):", se_jack, "\n")
+cat("Bias Jackknife:", bias_jack, "\n")
+cat("95% Confidence Interval: [", lower, ",", upper, "]\n")
+```
+# OLS manual
+```{r}
+# 1. Data tinggi dan berat
+set.seed(123)  # agar hasil reprodusibel
+height <- rnorm(200, 160, sd = 15)
+
+weight <- height - 80 + 1.02 * (height)^0.01 *
+  rnorm(200, 0, sd = 15) *
+  rnorm(200, 1.1, sd = 0.2)
+
+# 2. Gabungkan ke dalam data frame
+df <- data.frame(height, weight)
+
+# 3. Variabel independen (X) dan dependen (y)
+x <- df$height
+y <- df$weight
+
+# 4. Tambahkan 1 kolom untuk intercept
+X <- as.matrix(cbind(1, x))  # kolom pertama: 1 untuk intercept
+y <- as.matrix(y)
+
+# 5. Hitung koefisien OLS: β̂ = (X'X)^-1 X'y
+XtX <- t(X) %*% X
+XtX_inv <- solve(XtX)
+Xty <- t(X) %*% y
+beta_hat <- XtX_inv %*% Xty  # hasil: 2x1 matriks
+
+# 6. Hitung prediksi dan galat
+y_hat <- X %*% beta_hat
+residuals <- y - y_hat
+
+# 7. Hitung varians error dan matriks varians-kovarians
+n <- nrow(X)   # jumlah observasi
+k <- ncol(X)   # jumlah parameter (intercept + slope)
+
+sigma2_hat <- as.numeric(t(residuals) %*% residuals) / (n - k)
+VCV <- sigma2_hat * XtX_inv
+
+# 8. Hitung standard error
+se <- sqrt(diag(VCV))
+
+# 9. Hitung t-statistik dan p-value
+beta_vec <- drop(beta_hat)  # ubah ke vektor
+t_stat <- beta_vec / se
+p_val <- 2 * pt(abs(t_stat), df = n - k, lower.tail = FALSE)
+
+# 10. Gabungkan hasil ke dalam tabel
+result <- data.frame(
+  Coefficients = c("(Intercept)", "height"),
+  Estimate = round(beta_vec, 4),
+  `Std. Error` = round(se, 4),
+  `t value` = round(t_stat, 4),
+  `Pr(>|t|)` = round(p_val, 4)
+)
+
+# 11. Cetak hasil
+print(result)
+
+
+
+```
+```{r}
+# Data tetap
+set.seed(123)
+height <- rnorm(200, 160, sd = 15)
+weight <- height - 80 + 1.02 * (height)^0.01 *
+  rnorm(200, 0, sd = 15) *
+  rnorm(200, 1.1, sd = 0.2)
+
+df <- data.frame(height, weight)
+
+# Model regresi dengan lm()
+model <- lm(weight ~ height, data = df)
+
+# Lihat hasil ringkasan regresi
+summary(model)
+```
+## Asumsi OLS
+```{r}
+#1.Linearitas
+plot(model$fitted.values, model$residuals,
+     xlab = "Fitted Values", ylab = "Residuals",
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red")
+#2.normalitas galat
+shapiro.test(residuals(model))
+qqnorm(residuals(model))
+qqline(residuals(model), col = "red")
+#3.homoskedastisitas
+library(lmtest)
+bptest(model)
+#4.Tidak ada autokorelasi
+dwtest(model)
+#5.Multikolinearitas
+library(car)
+vif(model)  # hanya jika lebih dari 1 X
+
+```
+H0 : Residual berdistribusi normal
+𝐻1: Residual tidak normal
+
+Ho: Galat homoskedastik (variansi konstan)
+𝐻1 : Galat heteroskedastik
+
+H0: Tidak ada autokorelasi
+𝐻1: Ada autokorelasi
+
+VIF < 5 → aman
+VIF > 10 → multikolinearitas kuat
+
+# Hipotesis
+## Uji Z
+```{r}
+library(BSDA)
+xbar <- 1200000     
+mu <- 0             
+sigma <- 600000     
+n <- 100          
+#two tailed
+zsum.test(mean.x = xbar, sigma.x = sigma, n.x = n,
+          alternative = "two.sided", mu = mu)
+
+z_two <- (xbar - mu) / (sigma / sqrt(n))
+pval_two <- 2 * (1 - pnorm(abs(z_two)))
+
+#right tail
+zsum.test(mean.x = xbar, sigma.x = sigma, n.x = n,
+          alternative = "greater", mu = mu)
+z_right <- (xbar - mu) / (sigma / sqrt(n))
+pval_right <- 1 - pnorm(z_right)
+
+#left tail
+zsum.test(mean.x = xbar, sigma.x = sigma, n.x = n,
+          alternative = "less", mu = mu)
+
+z_left <- (xbar - mu) / (sigma / sqrt(n))
+pval_left <- pnorm(z_left)
+```
+
+```{r}
+# ttest dan t sum test sama
+IR64=c(4.5,4.8,4,3.6,3.8,5,4,3.9,4.8)
+MSP=c(6.4,6.5,4.2,4,5.8,5.9,6.2,3.8,2.5,3.6,7,8)
+t.test(MSP,alternative="two.sided")
+tsum.test(mean.x = mean(MSP),s.x = sd(MSP),n.x = length(MSP),alternative = "two.sided",mu=0,var.equal = TRUE,conf.level = 0.95)
+```
+
+```{r}
+#UJi t 2 populasi independen/tidak berpasangan
+#H0:miu1-miu2=0
+#H1:miu1-miu2!=0
+t.test(x=IR64,y=MSP,alternative="two.sided",
+       paired = FALSE,var.equal = TRUE,
+       conf.level = 0.95)
+```
+```{r}
+#H0: miu1-miu2 <= 0
+#H1: miu1-miu2 > 0
+#uji t berpasangan
+Orang.ke=seq(1:10)
+BB.Sebelum=c(57,69,56,67,55,56,62,67,67,56)
+BB.Sesudah=c(55,70,56,65,54,55,64,65,67,54)
+data=data.frame(Orang.ke,BB.Sebelum,BB.Sesudah)
+
+t.test(x=BB.Sebelum,y=BB.Sesudah,alternative="two.sided",
+       paired = TRUE,var.equal = TRUE,
+       conf.level = 0.95)
+```
+
+
+```{r}
+# Negatif log-likelihood fungsi eksponensial
+neg_log_likelihood <- function(lambda, x) {
+  n <- length(x)
+  if (lambda <= 0) return(Inf)  # lambda harus positif
+  -n * log(lambda) + lambda * sum(x)
+}
+
+# Fungsi utama untuk estimasi MLE
+mle_exp <- function(x, start = 1) {
+  optim(par = start,
+        fn = neg_log_likelihood,
+        x = x,
+        method = "Brent",     # cocok untuk 1 parameter
+        lower = 1e-8,
+        upper = 100)$par      # hanya ambil nilai estimasi λ
+}
+
+```
+
+```{r}
+x <- c(0.388495237, 0.495981747, 1.828324201, 0.009331076,
+       2.168366877, 0.293000151, 0.223063166, 3.778375571,
+       1.37471450, 0.415257032)
+lambda_hat <- mle_exp(x, start = 1)
+cat("Estimasi lambda (MLE):", lambda_hat, "\n")
+lambda_theory <- 1 / mean(x)
+cat("Estimasi lambda (teoritis):", lambda_theory, "\n")
+
+```
+
+
+Ho : p1=p2 (proporsi perokok dan bukan perokok yang berkerut sama)
+H1 : p1>p2 (proporsi perokok yg berkeruut lebih besar dari yang bukan perokok)
+Tolak H0, ada cukup bukti bahwa proporsi kerutan lebih tinggi pada perokok.
+```{r}
+# Data
+x1 <- 95     # jumlah perokok yang berkerut
+n1 <- 150    # total perokok
+x2 <- 103    # jumlah bukan perokok yang berkerut
+n2 <- 250    # total bukan perokok
+
+# Proporsi
+p1_hat <- x1 / n1
+p2_hat <- x2 / n2
+
+# Proporsi gabungan
+p_hat <- (x1 + x2) / (n1 + n2)
+
+# Statistik uji z
+z <- (p1_hat - p2_hat) / sqrt(p_hat * (1 - p_hat) * (1/n1 + 1/n2))
+
+# p-value (uji satu sisi kanan)
+p_val <- pnorm(z, lower.tail = FALSE)
+
+# Output
+cat("Z-score:", z, "\n")
+cat("P-value:", p_val, "\n")
+
+```
+
